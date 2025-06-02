@@ -2,6 +2,8 @@
 
 A modern, responsive IPTV viewer built with React and Vite. Stream live TV channels from M3U playlists with an intuitive interface and robust video controls.
 
+🌐 **[Live Demo](https://ronniegrg.github.io/iptv-viewer/)**
+
 ## ✨ Features
 
 - 📺 **M3U Playlist Support** - Load channels from M3U/M3U8 playlist files
@@ -83,6 +85,21 @@ src/
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run deploy` - Deploy to GitHub Pages
+
+## 🚀 Deployment
+
+This project is automatically deployed to GitHub Pages using GitHub Actions. Every push to the `main` branch triggers a new deployment.
+
+### Manual Deployment
+
+You can also deploy manually using:
+
+```bash
+npm run deploy
+```
+
+The live application will be available at: https://ronniegrg.github.io/iptv-viewer/
 
 ## 🤝 Contributing
 
