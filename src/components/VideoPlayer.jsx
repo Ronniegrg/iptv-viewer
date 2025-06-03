@@ -50,7 +50,13 @@ function playerReducer(state, action) {
   }
 }
 
-const VideoPlayer = ({ channel, onError, onTimeout }) => {
+const VideoPlayer = ({
+  channel,
+  onError,
+  onTimeout,
+  channels = [],
+  onChannelSelect,
+}) => {
   const [state, dispatch] = useReducer(playerReducer, initialState);
   const [showControls, setShowControls] = React.useState(false);
   const videoRef = useRef(null);
@@ -59,6 +65,12 @@ const VideoPlayer = ({ channel, onError, onTimeout }) => {
   const copyTimeoutRef = useRef();
   const timeoutRef = useRef();
   const errorTimeoutRef = useRef();
+  const [showSearchBar, setShowSearchBar] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
+  const [searchResults, setSearchResults] = React.useState([]);
+  const searchInputRef = React.useRef(null);
+  const bufferRef = React.useRef("");
+  const [highlightedIndex, setHighlightedIndex] = React.useState(0);
 
   const handleError = useCallback(
     (error) => {
@@ -234,6 +246,101 @@ const VideoPlayer = ({ channel, onError, onTimeout }) => {
       if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
     };
   }, [state.hasError, onTimeout, channel]);
+
+  // Update search results and reset highlight on value change
+  React.useEffect(() => {
+    if (showSearchBar && searchValue.trim()) {
+      // Only match channels that start with the search value (case-insensitive)
+      const filtered = channels.filter((ch) =>
+        ch.title.toLowerCase().startsWith(searchValue.toLowerCase())
+      );
+      setSearchResults(filtered);
+      setHighlightedIndex(0);
+    } else {
+      setSearchResults([]);
+      setHighlightedIndex(0);
+    }
+  }, [searchValue, showSearchBar, channels]);
+
+  // Handle keyboard navigation in the search results
+  const handleSearchInputKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      setHighlightedIndex((i) => Math.min(i + 1, searchResults.length - 1));
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
+      setHighlightedIndex((i) => Math.max(i - 1, 0));
+      e.preventDefault();
+    } else if (e.key === "Enter") {
+      if (searchResults.length > 0) {
+        onChannelSelect && onChannelSelect(searchResults[highlightedIndex]);
+        setShowSearchBar(false);
+        setSearchValue("");
+      }
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      setShowSearchBar(false);
+      setSearchValue("");
+    }
+  };
+
+  // Handle click on a result
+  const handleResultClick = (idx) => {
+    if (searchResults.length > 0) {
+      onChannelSelect && onChannelSelect(searchResults[idx]);
+      setShowSearchBar(false);
+      setSearchValue("");
+    }
+  };
+
+  // Focus input when search bar opens
+  React.useEffect(() => {
+    if (showSearchBar && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showSearchBar]);
+
+  // Keyboard shortcut for search bar (word + Enter in fullscreen)
+  React.useEffect(() => {
+    const maxBufferLength = 6; // 'search'.length
+    function handleSearchShortcut(e) {
+      console.log(
+        "[DEBUG] Keydown event:",
+        e.key,
+        "isFullscreen:",
+        isFullscreen,
+        "showSearchBar:",
+        showSearchBar,
+        "buffer:",
+        bufferRef.current
+      );
+      if (showSearchBar) {
+        if (e.key === "Escape") {
+          setShowSearchBar(false);
+          setSearchValue("");
+          bufferRef.current = "";
+        }
+        return;
+      }
+      if (!isFullscreen) {
+        bufferRef.current = "";
+        return;
+      }
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+        bufferRef.current += e.key;
+        if (bufferRef.current.length > maxBufferLength)
+          bufferRef.current = bufferRef.current.slice(-maxBufferLength);
+      }
+      if (e.key === "Enter") {
+        if (bufferRef.current === "search" || bufferRef.current === "Search") {
+          setShowSearchBar(true);
+          setSearchValue("");
+        }
+        bufferRef.current = "";
+      }
+    }
+    window.addEventListener("keydown", handleSearchShortcut);
+    return () => window.removeEventListener("keydown", handleSearchShortcut);
+  }, [isFullscreen, showSearchBar, setShowSearchBar, setSearchValue]);
 
   const getProxiedUrl = (url) => {
     if (!url) return url;
@@ -459,6 +566,66 @@ const VideoPlayer = ({ channel, onError, onTimeout }) => {
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
       >
+        {showSearchBar && (
+          <div className="fullscreen-search-overlay">
+            <form
+              className="fullscreen-search-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (searchResults.length > 0) {
+                  onChannelSelect &&
+                    onChannelSelect(searchResults[highlightedIndex]);
+                  setShowSearchBar(false);
+                  setSearchValue("");
+                }
+              }}
+            >
+              <input
+                ref={searchInputRef}
+                className="fullscreen-search-input"
+                type="text"
+                placeholder="Type channel name..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={handleSearchInputKeyDown}
+                autoFocus
+              />
+              {searchValue && (
+                <div className="fullscreen-search-results">
+                  {searchResults.length === 0 ? (
+                    <div className="fullscreen-search-no-results">
+                      No channels found
+                    </div>
+                  ) : (
+                    <ul className="fullscreen-search-list">
+                      {searchResults.map((ch, idx) => (
+                        <li
+                          key={ch.id}
+                          className={
+                            idx === highlightedIndex ? "highlighted" : ""
+                          }
+                          onMouseEnter={() => setHighlightedIndex(idx)}
+                          onMouseDown={() => handleResultClick(idx)}
+                          style={{
+                            cursor: "pointer",
+                            padding: "0.5em 1em",
+                            background:
+                              idx === highlightedIndex
+                                ? "#3366cc"
+                                : "transparent",
+                            color: idx === highlightedIndex ? "#fff" : "#fff",
+                          }}
+                        >
+                          {ch.title}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </form>
+          </div>
+        )}
         {hasError ? (
           <div className="error-state">
             <div className="error-icon">

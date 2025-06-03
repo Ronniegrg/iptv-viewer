@@ -435,6 +435,8 @@ function App() {
             onError={handleVideoError}
             onRemoveChannel={handleRemoveChannel}
             onTimeout={handleStreamTimeout}
+            channels={channels}
+            onChannelSelect={setSelectedChannel}
           />
 
           {showDebugInfo && selectedChannel && (
