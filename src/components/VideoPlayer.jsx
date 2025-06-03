@@ -2,6 +2,7 @@ import { useReducer, useEffect, useCallback, useRef } from "react";
 import ReactPlayer from "react-player";
 import React from "react";
 import "./VideoPlayer.css";
+import ChannelList from "./ChannelList";
 
 const initialState = {
   isLoading: true,
@@ -56,6 +57,7 @@ const VideoPlayer = ({
   onTimeout,
   channels = [],
   onChannelSelect,
+  onShowChannelList,
 }) => {
   const [state, dispatch] = useReducer(playerReducer, initialState);
   const [showControls, setShowControls] = React.useState(false);
@@ -71,6 +73,8 @@ const VideoPlayer = ({
   const searchInputRef = React.useRef(null);
   const bufferRef = React.useRef("");
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
+  const [showChannelListOverlay, setShowChannelListOverlay] =
+    React.useState(false);
 
   const handleError = useCallback(
     (error) => {
@@ -301,7 +305,7 @@ const VideoPlayer = ({
 
   // Keyboard shortcut for search bar (word + Enter in fullscreen)
   React.useEffect(() => {
-    const maxBufferLength = 6; // 'search'.length
+    const maxBufferLength = 6; // 'search'.length or 'list'.length
     function handleSearchShortcut(e) {
       console.log(
         "[DEBUG] Keydown event:",
@@ -321,6 +325,12 @@ const VideoPlayer = ({
         }
         return;
       }
+      if (showChannelListOverlay) {
+        if (e.key === "Escape") {
+          setShowChannelListOverlay(false);
+        }
+        return;
+      }
       if (!isFullscreen) {
         bufferRef.current = "";
         return;
@@ -331,16 +341,37 @@ const VideoPlayer = ({
           bufferRef.current = bufferRef.current.slice(-maxBufferLength);
       }
       if (e.key === "Enter") {
-        if (bufferRef.current === "search" || bufferRef.current === "Search") {
+        const bufferLower = bufferRef.current.toLowerCase();
+        if (bufferLower === "search") {
           setShowSearchBar(true);
           setSearchValue("");
+          console.log("[DEBUG] Triggered search shortcut");
+        } else if (bufferLower === "list") {
+          setShowChannelListOverlay(true);
+          if (onShowChannelList) onShowChannelList();
+          console.log(
+            "[DEBUG] Triggered list shortcut (show channel list overlay)"
+          );
         }
         bufferRef.current = "";
       }
     }
     window.addEventListener("keydown", handleSearchShortcut);
     return () => window.removeEventListener("keydown", handleSearchShortcut);
-  }, [isFullscreen, showSearchBar, setShowSearchBar, setSearchValue]);
+  }, [
+    isFullscreen,
+    showSearchBar,
+    setShowSearchBar,
+    setSearchValue,
+    onShowChannelList,
+    showChannelListOverlay,
+  ]);
+
+  // Handler for selecting a channel from the overlay
+  const handleOverlayChannelSelect = (ch) => {
+    setShowChannelListOverlay(false);
+    onChannelSelect && onChannelSelect(ch);
+  };
 
   const getProxiedUrl = (url) => {
     if (!url) return url;
@@ -624,6 +655,27 @@ const VideoPlayer = ({
                 </div>
               )}
             </form>
+          </div>
+        )}
+        {showChannelListOverlay && (
+          <div className="fullscreen-channel-list-overlay">
+            <div className="fullscreen-channel-list-modal">
+              <button
+                className="fullscreen-channel-list-close"
+                onClick={() => setShowChannelListOverlay(false)}
+                title="Close"
+                aria-label="Close channel list overlay"
+              >
+                ✕
+              </button>
+              <h2 className="fullscreen-channel-list-title">Channel List</h2>
+              <ChannelList
+                channels={channels}
+                selectedChannel={channel}
+                onChannelSelect={handleOverlayChannelSelect}
+                onClose={() => setShowChannelListOverlay(false)}
+              />
+            </div>
           </div>
         )}
         {hasError ? (

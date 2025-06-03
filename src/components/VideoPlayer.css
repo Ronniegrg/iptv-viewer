@@ -905,3 +905,101 @@
 .fullscreen-search-list::-webkit-scrollbar-track {
   background: transparent;
 }
+
+.fullscreen-channel-list-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(24, 28, 36, 0.55);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.25s;
+}
+
+.fullscreen-channel-list-modal {
+  background: rgba(36, 44, 66, 0.92);
+  border-radius: 22px;
+  box-shadow: 0 8px 40px rgba(51, 102, 204, 0.18),
+    0 2px 12px rgba(0, 0, 0, 0.18);
+  min-width: 420px;
+  max-width: 96vw;
+  min-height: 500px;
+  max-height: 90vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 2.2rem 1.5rem 1.5rem 1.5rem;
+  position: relative;
+  border: 1.5px solid #5c94ff;
+  animation: fadeInUp 0.33s cubic-bezier(0.23, 1.01, 0.32, 1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fullscreen-channel-list-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: rgba(51, 102, 204, 0.13);
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+  z-index: 10;
+}
+.fullscreen-channel-list-close:hover {
+  background: #3366cc;
+  color: #ffd93d;
+  transform: scale(1.08);
+}
+
+.fullscreen-channel-list-title {
+  text-align: center;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #ffd93d;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 12px rgba(51, 102, 204, 0.13);
+}
+
+@media (max-width: 600px) {
+  .fullscreen-channel-list-modal {
+    min-width: 0;
+    width: 98vw;
+    padding: 1.2rem 0.2rem 0.7rem 0.2rem;
+  }
+  .fullscreen-channel-list-title {
+    font-size: 1.3rem;
+  }
+  .fullscreen-channel-list-close {
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+  }
+}

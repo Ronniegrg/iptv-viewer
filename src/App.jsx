@@ -242,6 +242,9 @@ function App() {
     }
   };
 
+  // Function to show the channel list (for use in VideoPlayer shortcut)
+  const showChannelList = () => setIsChannelListVisible(true);
+
   if (isLoading) {
     return (
       <div className="app">
@@ -437,6 +440,7 @@ function App() {
             onTimeout={handleStreamTimeout}
             channels={channels}
             onChannelSelect={setSelectedChannel}
+            onShowChannelList={showChannelList}
           />
 
           {showDebugInfo && selectedChannel && (
