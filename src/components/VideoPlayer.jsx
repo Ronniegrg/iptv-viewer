@@ -50,13 +50,15 @@ function playerReducer(state, action) {
   }
 }
 
-const VideoPlayer = ({ channel, onError }) => {
+const VideoPlayer = ({ channel, onError, onTimeout }) => {
   const [state, dispatch] = useReducer(playerReducer, initialState);
   const [showControls, setShowControls] = React.useState(false);
   const videoRef = useRef(null);
   const videoWrapperRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const copyTimeoutRef = useRef();
+  const timeoutRef = useRef();
+  const errorTimeoutRef = useRef();
 
   const handleError = useCallback(
     (error) => {
@@ -201,6 +203,37 @@ const VideoPlayer = ({ channel, onError }) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (channel && state.isLoading && !state.hasError) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        if (state.isLoading && !state.hasError && onTimeout) {
+          onTimeout();
+        }
+      }, 15000);
+    }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [channel, state.isLoading, state.hasError]);
+
+  // 4-second error timeout
+  useEffect(() => {
+    if (state.hasError) {
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = setTimeout(() => {
+        if (state.hasError && onTimeout) {
+          onTimeout();
+        }
+      }, 4000);
+    } else {
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    }
+    return () => {
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    };
+  }, [state.hasError, onTimeout, channel]);
 
   const getProxiedUrl = (url) => {
     if (!url) return url;
