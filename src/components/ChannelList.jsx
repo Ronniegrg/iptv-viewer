@@ -22,6 +22,8 @@ const ChannelList = ({
   const epgCache = useRef({});
   const [epgLoading, setEpgLoading] = useState(false);
   const [epgError, setEpgError] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const searchInputRef = useRef(null);
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -191,6 +193,32 @@ const ChannelList = ({
     return new Date(`${y}-${m}-${d}T${h}:${min}:${s}`);
   }
 
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [
+    searchQuery,
+    selectedCategory,
+    showFavorites,
+    showRecentlyWatched,
+    sortOption,
+  ]);
+
+  const handleSearchKeyDown = (e) => {
+    if (filteredChannels.length === 0) return;
+    if (e.key === "ArrowDown") {
+      setHighlightedIndex((i) => Math.min(i + 1, filteredChannels.length - 1));
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
+      setHighlightedIndex((i) => Math.max(i - 1, 0));
+      e.preventDefault();
+    } else if (e.key === "Enter") {
+      if (filteredChannels[highlightedIndex]) {
+        handleChannelClick(filteredChannels[highlightedIndex]);
+      }
+      e.preventDefault();
+    }
+  };
+
   return (
     <div className="channel-list rich">
       {/* Channel Info Modal */}
@@ -311,6 +339,8 @@ const ChannelList = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
             aria-label="Search channels"
+            ref={searchInputRef}
+            onKeyDown={handleSearchKeyDown}
           />
           <div className="search-icon">🔍</div>
         </div>
@@ -430,13 +460,14 @@ const ChannelList = ({
           >
             {({ index, style }) => {
               const channel = filteredChannels[index];
+              const isHighlighted = index === highlightedIndex;
               return (
                 <div
                   key={channel.id}
                   style={style}
                   className={`channel-item card ${
                     selectedChannel?.id === channel.id ? "selected" : ""
-                  }`}
+                  } ${isHighlighted ? "active" : ""}`}
                   onClick={() => handleChannelClick(channel)}
                   tabIndex={0}
                   role="button"
@@ -552,12 +583,12 @@ const ChannelList = ({
             <p>Try adjusting your search or filter criteria</p>
           </div>
         ) : (
-          filteredChannels.map((channel) => (
+          filteredChannels.map((channel, idx) => (
             <div
               key={channel.id}
               className={`channel-item card ${
                 selectedChannel?.id === channel.id ? "selected" : ""
-              }`}
+              } ${idx === highlightedIndex ? "active" : ""}`}
               onClick={() => handleChannelClick(channel)}
               tabIndex={0}
               role="button"
