@@ -134,3 +134,27 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 📞 Support
 
 If you encounter any issues or have questions, please [open an issue](https://github.com/Ronniegrg/iptv-viewer/issues) on GitHub.
+
+## 🧑‍💻 Developer Documentation
+
+### Component Structure
+
+- Main components are in `src/components/`.
+- Each major UI section (ChannelList, VideoPlayer, LoadingSpinner) should be split into smaller, focused subcomponents for maintainability.
+- Utility functions are in `src/utils/`.
+- Custom hooks (if any) should be placed in `src/hooks/`.
+
+### Adding Features
+
+- Create new components in `src/components/` as needed.
+- For new utilities, add to `src/utils/`.
+- Follow the code style and use ESLint to check formatting: `npm run lint`.
+- Test your changes on both desktop and mobile devices for responsiveness.
+
+### Contributing
+
+- Fork the repository and create a feature branch.
+- Use the provided issue and PR templates.
+- Write clear commit messages and document your code.
+- Run tests and lint before submitting a PR.
+- See `.github/ISSUE_TEMPLATE/` and `.github/pull_request_template.md` for templates.

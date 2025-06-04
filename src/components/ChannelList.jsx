@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { searchChannels, groupChannelsByCategory } from "../utils/m3uParser";
 import "./ChannelList.css";
 import { FixedSizeList as List } from "react-window";
+import ChannelItem from "./ChannelItem";
+import ChannelInfoModal from "./ChannelInfoModal";
 
 const ChannelList = ({
   channels,
@@ -668,102 +670,15 @@ const ChannelList = ({
     <div className="channel-list rich">
       {/* Channel Info Modal */}
       {modalChannel && (
-        <div className="modal-overlay" onClick={() => setModalChannel(null)}>
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label={modalChannel.title + " info"}
-            tabIndex={-1}
-          >
-            <button
-              className="modal-close"
-              onClick={() => setModalChannel(null)}
-              title="Close"
-              aria-label="Close info modal"
-            >
-              ✕
-            </button>
-            <div className="modal-content">
-              {modalChannel.logo && (
-                <img
-                  src={modalChannel.logo}
-                  alt={modalChannel.title}
-                  className="modal-logo"
-                />
-              )}
-              <h2>{modalChannel.title}</h2>
-              <div>
-                <strong>Group:</strong> {modalChannel.group}
-              </div>
-              {modalChannel.country && (
-                <div>
-                  <strong>Country:</strong> {modalChannel.country}
-                </div>
-              )}
-              {modalChannel.language && (
-                <div>
-                  <strong>Language:</strong> {modalChannel.language}
-                </div>
-              )}
-              <div>
-                <strong>URL:</strong>{" "}
-                <span style={{ wordBreak: "break-all" }}>
-                  {modalChannel.url}
-                </span>
-              </div>
-              <hr style={{ margin: "16px 0" }} />
-              <div style={{ marginTop: 8 }}>
-                <strong>EPG (Program Guide):</strong>
-                {epgLoading && (
-                  <div style={{ color: "#888", marginTop: 4 }}>
-                    Loading EPG...
-                  </div>
-                )}
-                {epgError && (
-                  <div style={{ color: "red", marginTop: 4 }}>{epgError}</div>
-                )}
-                {!epgLoading && !epgError && modalChannel?.tvgId && (
-                  <div style={{ marginTop: 4 }}>
-                    {currentProg ? (
-                      <>
-                        <div>
-                          <strong>Now:</strong> {currentProg.title}{" "}
-                          <span style={{ color: "#888" }}>
-                            ({currentProg.start.slice(8, 12)} -{" "}
-                            {currentProg.stop.slice(8, 12)})
-                          </span>
-                        </div>
-                        {currentProg.desc && (
-                          <div style={{ fontSize: "0.95em", color: "#666" }}>
-                            {currentProg.desc}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div>No current program info.</div>
-                    )}
-                    {nextProg && (
-                      <div style={{ marginTop: 6 }}>
-                        <strong>Next:</strong> {nextProg.title}{" "}
-                        <span style={{ color: "#888" }}>
-                          ({nextProg.start.slice(8, 12)} -{" "}
-                          {nextProg.stop.slice(8, 12)})
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!epgLoading && !epgError && !modalChannel?.tvgId && (
-                  <div style={{ color: "#888", marginTop: 4 }}>
-                    No EPG ID for this channel.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ChannelInfoModal
+          channel={modalChannel}
+          epgData={epgData}
+          epgLoading={epgLoading}
+          epgError={epgError}
+          currentProg={currentProg}
+          nextProg={nextProg}
+          onClose={() => setModalChannel(null)}
+        />
       )}
       <div className="channel-list-header">
         <div className="header-top">
