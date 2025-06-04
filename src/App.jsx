@@ -4,6 +4,7 @@ import { parseM3U } from "./utils/m3uParser";
 import VideoPlayer from "./components/VideoPlayer";
 import ChannelList from "./components/ChannelList";
 import LoadingSpinner from "./components/LoadingSpinner";
+import { Search, Menu, X, Sun, Moon, Upload, Settings } from "lucide-react";
 import "./App.css";
 
 function App() {
@@ -283,28 +284,32 @@ function App() {
             onClick={() => setShowDebugInfo(!showDebugInfo)}
             title="Toggle debug information"
           >
-            🔧 Debug
+            <Settings size={16} />
+            Debug
           </button>
           <button
             className="toggle-channels-button"
             onClick={toggleChannelList}
             title={isChannelListVisible ? "Hide channels" : "Show channels"}
           >
-            {isChannelListVisible ? "⬅️ Hide" : "➡️ Show"} Channels
+            {isChannelListVisible ? <X size={16} /> : <Menu size={16} />}
+            {isChannelListVisible ? "Hide" : "Show"} Channels
           </button>
           <button
             className="debug-toggle-button"
             onClick={() => setDarkMode((v) => !v)}
             title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           >
-            {darkMode ? "🌙 Dark" : "☀️ Light"}
+            {darkMode ? <Moon size={16} /> : <Sun size={16} />}
+            {darkMode ? "Dark" : "Light"}
           </button>
           <button
             className="debug-toggle-button"
             onClick={() => setShowPlaylistModal(true)}
             title="Upload or enter playlist URL"
           >
-            📂 Playlist
+            <Upload size={16} />
+            Playlist
           </button>
         </div>
       </header>

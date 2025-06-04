@@ -2,28 +2,42 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #181c24;
-  border-radius: 18px;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  box-shadow: 0 6px 32px rgba(24, 28, 36, 0.18);
-  border: 1.5px solid #23263a;
-  font-family: "Inter", "Segoe UI", Arial, sans-serif;
-  margin: 0.5rem;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border);
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: var(--spacing-sm);
 }
 
 .video-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem 1.2rem 2rem;
-  background: linear-gradient(135deg, #22335a 0%, #2a5298 100%);
+  padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-md) var(--spacing-xl);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   color: white;
-  border-bottom: 2px solid #3366cc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
-  box-shadow: 0 2px 8px rgba(51, 102, 204, 0.08);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
+
+.video-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  pointer-events: none;
 }
 
 .video-header::after {
@@ -36,7 +50,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.6),
     transparent
   );
   animation: headerGlow 4s infinite;
@@ -57,61 +71,60 @@
 .channel-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: rgba(24, 28, 36, 0.72);
-  backdrop-filter: blur(8px) saturate(120%);
-  -webkit-backdrop-filter: blur(8px) saturate(120%);
-  border-radius: 14px;
-  padding: 0.5rem 1.2rem 0.5rem 0.7rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s, background 0.2s;
+  gap: var(--spacing-lg);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-sm) var(--spacing-sm);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .channel-info:hover {
-  box-shadow: 0 4px 18px rgba(51, 102, 204, 0.13);
-  background: rgba(24, 28, 36, 0.88);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .channel-logo {
-  width: 60px;
-  height: 60px;
-  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
   object-fit: contain;
-  background: rgba(255, 255, 255, 0.13);
-  padding: 7px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0 0 2px #fff3;
-  border: 2px solid #fff6;
-  transition: transform 0.2s, box-shadow 0.2s, border 0.2s;
+  background: rgba(255, 255, 255, 0.2);
+  padding: var(--spacing-xs);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
 }
 
 .channel-logo:hover {
-  transform: scale(1.07);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18), 0 0 0 2.5px #fff8;
-  border: 2.5px solid #fff9;
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .channel-details {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--spacing-xs);
 }
 
 .channel-title {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: 0.02em;
-  line-height: 1.3;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
-  max-width: 100%;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  line-height: 1.2;
+  color: white;
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: linear-gradient(to right, #ffffff, #e6e9ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
 }
 
 .channel-info:hover .channel-title {

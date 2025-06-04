@@ -66,6 +66,10 @@ const ChannelList = ({
 
   const filteredChannels = useMemo(() => {
     let filtered = searchChannels(channels, searchQuery);
+    // Filter out channels with title 'Undefined' or empty title
+    filtered = filtered.filter(
+      (channel) => channel.title && channel.title !== "Undefined"
+    );
     if (selectedCategory !== "all") {
       filtered = filtered.filter(
         (channel) => channel.group === selectedCategory
@@ -267,6 +271,47 @@ const ChannelList = ({
     }
   }, [fullscreenOverlay, initialHighlightedChannelId, filteredChannels]);
 
+  // After highlightedIndex changes, scroll to the highlighted item in the virtualized list
+  useEffect(() => {
+    if (viewMode === "list" && listRef.current) {
+      listRef.current.scrollToItem(highlightedIndex, "smart");
+    }
+  }, [highlightedIndex, viewMode]);
+
+  // For grid view, add a ref to each item and scroll into view if highlighted
+  const itemRefs = useRef([]);
+  useEffect(() => {
+    if (viewMode === "grid" && itemRefs.current[highlightedIndex]) {
+      itemRefs.current[highlightedIndex].scrollIntoView({ block: "nearest" });
+    }
+  }, [highlightedIndex, viewMode]);
+
+  // Ensure the selected channel is always visible in the filtered list
+  let displayChannels = filteredChannels;
+  let selectedIndex = filteredChannels.findIndex(
+    (ch) => ch.id === selectedChannel?.id
+  );
+
+  // If selectedChannel is not in filteredChannels, prepend it to the display list
+  let selectedChannelMissing =
+    selectedChannel &&
+    selectedIndex === -1 &&
+    channels.find((ch) => ch.id === selectedChannel.id);
+  if (selectedChannelMissing) {
+    displayChannels = [selectedChannel, ...filteredChannels];
+    selectedIndex = 0;
+  }
+
+  // On mount and whenever selectedChannel changes, scroll to the selected channel
+  useEffect(() => {
+    if (selectedIndex === -1) return;
+    if (viewMode === "list" && listRef.current) {
+      listRef.current.scrollToItem(selectedIndex, "smart");
+    } else if (viewMode === "grid" && itemRefs.current[selectedIndex]) {
+      itemRefs.current[selectedIndex].scrollIntoView({ block: "nearest" });
+    }
+  }, [selectedChannel, viewMode]);
+
   return fullscreenOverlay ? (
     <div className="fullscreen-channel-list-overlay">
       <div className="fullscreen-channel-list-modal">
@@ -280,7 +325,7 @@ const ChannelList = ({
         </button>
         <h2 className="fullscreen-channel-list-title">
           📺 Channel List{" "}
-          <span className="count-badge">{filteredChannels.length}</span>
+          <span className="count-badge">{displayChannels.length}</span>
         </h2>
         <div className="fullscreen-channel-list-content">
           <div className="channel-list-header fullscreen">
@@ -417,25 +462,28 @@ const ChannelList = ({
               <List
                 ref={listRef}
                 height={600}
-                itemCount={filteredChannels.length}
+                itemCount={displayChannels.length}
                 itemSize={80}
                 width={"100%"}
                 style={{ overflowX: "hidden" }}
               >
                 {({ index, style }) => {
-                  const channel = filteredChannels[index];
-                  const isHighlighted = index === highlightedIndex;
+                  const channel = displayChannels[index];
+                  const isSelected = selectedChannel?.id === channel.id;
+                  // Only apply 'active' if keyboard navigation is in use and highlightedIndex matches
+                  const isHighlighted =
+                    highlightedIndex !== 0 && index === highlightedIndex;
                   return (
                     <div
                       key={channel.id}
                       style={style}
                       className={`channel-item card ${
-                        selectedChannel?.id === channel.id ? "selected" : ""
-                      } ${isHighlighted ? "active" : ""}`}
+                        isSelected ? "selected active playing" : ""
+                      }${isHighlighted ? " active" : ""}`}
                       onClick={() => handleChannelClick(channel)}
                       tabIndex={0}
                       role="button"
-                      aria-pressed={selectedChannel?.id === channel.id}
+                      aria-pressed={isSelected}
                       aria-label={`Select channel ${channel.title}`}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ")
@@ -548,12 +596,14 @@ const ChannelList = ({
                 <p>Try adjusting your search or filter criteria</p>
               </div>
             ) : (
-              filteredChannels.map((channel, idx) => (
+              displayChannels.map((channel, idx) => (
                 <div
                   key={channel.id}
                   className={`channel-item card ${
                     selectedChannel?.id === channel.id ? "selected" : ""
-                  } ${idx === highlightedIndex ? "active" : ""}`}
+                  } ${idx === highlightedIndex ? "active" : ""} ${
+                    channel.id === selectedChannel?.id ? "playing" : ""
+                  }`}
                   onClick={() => handleChannelClick(channel)}
                   tabIndex={0}
                   role="button"
@@ -563,6 +613,7 @@ const ChannelList = ({
                     if (e.key === "Enter" || e.key === " ")
                       handleChannelClick(channel);
                   }}
+                  ref={(el) => (itemRefs.current[idx] = el)}
                 >
                   <div className="channel-logo-container">
                     {channel.logo ? (
@@ -684,7 +735,7 @@ const ChannelList = ({
         <div className="header-top">
           <h2>
             📺 Channels{" "}
-            <span className="count-badge">{filteredChannels.length}</span>
+            <span className="count-badge">{displayChannels.length}</span>
           </h2>
           <button className="close-button" onClick={onClose}>
             ✕
@@ -803,10 +854,7 @@ const ChannelList = ({
                   className="play-button skeleton-box"
                   style={{ width: 32, height: 32, borderRadius: "50%" }}
                 />
-                <div
-                  className="info-button skeleton-box"
-                  style={{ width: 24, height: 24, borderRadius: "50%" }}
-                />
+                <div className="info-button skeleton-box" />
               </div>
             </div>
           ))
@@ -814,25 +862,28 @@ const ChannelList = ({
           <List
             ref={listRef}
             height={600}
-            itemCount={filteredChannels.length}
+            itemCount={displayChannels.length}
             itemSize={80}
             width={"100%"}
             style={{ overflowX: "hidden" }}
           >
             {({ index, style }) => {
-              const channel = filteredChannels[index];
-              const isHighlighted = index === highlightedIndex;
+              const channel = displayChannels[index];
+              const isSelected = selectedChannel?.id === channel.id;
+              // Only apply 'active' if keyboard navigation is in use and highlightedIndex matches
+              const isHighlighted =
+                highlightedIndex !== 0 && index === highlightedIndex;
               return (
                 <div
                   key={channel.id}
                   style={style}
                   className={`channel-item card ${
-                    selectedChannel?.id === channel.id ? "selected" : ""
-                  } ${isHighlighted ? "active" : ""}`}
+                    isSelected ? "selected active playing" : ""
+                  }${isHighlighted ? " active" : ""}`}
                   onClick={() => handleChannelClick(channel)}
                   tabIndex={0}
                   role="button"
-                  aria-pressed={selectedChannel?.id === channel.id}
+                  aria-pressed={isSelected}
                   aria-label={`Select channel ${channel.title}`}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ")
@@ -940,19 +991,21 @@ const ChannelList = ({
               );
             }}
           </List>
-        ) : filteredChannels.length === 0 ? (
+        ) : displayChannels.length === 0 ? (
           <div className="no-channels">
             <div className="no-channels-icon">📭</div>
             <h3>No channels found</h3>
             <p>Try adjusting your search or filter criteria</p>
           </div>
         ) : (
-          filteredChannels.map((channel, idx) => (
+          displayChannels.map((channel, idx) => (
             <div
               key={channel.id}
               className={`channel-item card ${
                 selectedChannel?.id === channel.id ? "selected" : ""
-              } ${idx === highlightedIndex ? "active" : ""}`}
+              } ${idx === highlightedIndex ? "active" : ""} ${
+                channel.id === selectedChannel?.id ? "playing" : ""
+              }`}
               onClick={() => handleChannelClick(channel)}
               tabIndex={0}
               role="button"
@@ -962,6 +1015,7 @@ const ChannelList = ({
                 if (e.key === "Enter" || e.key === " ")
                   handleChannelClick(channel);
               }}
+              ref={(el) => (itemRefs.current[idx] = el)}
             >
               <div className="channel-logo-container">
                 {channel.logo ? (
