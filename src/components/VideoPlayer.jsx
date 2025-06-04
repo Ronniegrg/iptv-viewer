@@ -75,6 +75,10 @@ const VideoPlayer = ({
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
   const [showChannelListOverlay, setShowChannelListOverlay] =
     React.useState(false);
+  const [showChannelInfoOverlay, setShowChannelInfoOverlay] =
+    React.useState(false);
+  const channelInfoTimeoutRef = React.useRef();
+  const searchItemRefs = React.useRef([]); // Refs for search result items
 
   const handleError = useCallback(
     (error) => {
@@ -342,11 +346,11 @@ const VideoPlayer = ({
       }
       if (e.key === "Enter") {
         const bufferLower = bufferRef.current.toLowerCase();
-        if (bufferLower === "search") {
+        if (bufferLower === "s") {
           setShowSearchBar(true);
           setSearchValue("");
           console.log("[DEBUG] Triggered search shortcut");
-        } else if (bufferLower === "list") {
+        } else if (bufferLower === "l") {
           setShowChannelListOverlay(true);
           if (onShowChannelList) onShowChannelList();
           console.log(
@@ -392,6 +396,30 @@ const VideoPlayer = ({
     }
     return url;
   };
+
+  React.useEffect(() => {
+    if (channel) {
+      setShowChannelInfoOverlay(true);
+      if (channelInfoTimeoutRef.current)
+        clearTimeout(channelInfoTimeoutRef.current);
+      channelInfoTimeoutRef.current = setTimeout(() => {
+        setShowChannelInfoOverlay(false);
+      }, 5000);
+    }
+    return () => {
+      if (channelInfoTimeoutRef.current)
+        clearTimeout(channelInfoTimeoutRef.current);
+    };
+  }, [channel]);
+
+  // Scroll highlighted search result into view
+  React.useEffect(() => {
+    if (showSearchBar && searchItemRefs.current[highlightedIndex]) {
+      searchItemRefs.current[highlightedIndex].scrollIntoView({
+        block: "nearest",
+      });
+    }
+  }, [highlightedIndex, showSearchBar, searchResults]);
 
   if (!channel) {
     return (
@@ -632,6 +660,7 @@ const VideoPlayer = ({
                       {searchResults.map((ch, idx) => (
                         <li
                           key={ch.id}
+                          ref={(el) => (searchItemRefs.current[idx] = el)}
                           className={
                             idx === highlightedIndex ? "highlighted" : ""
                           }
@@ -674,7 +703,40 @@ const VideoPlayer = ({
                 selectedChannel={channel}
                 onChannelSelect={handleOverlayChannelSelect}
                 onClose={() => setShowChannelListOverlay(false)}
+                fullscreenOverlay={true}
+                initialHighlightedChannelId={channel?.id}
               />
+            </div>
+          </div>
+        )}
+        {showChannelInfoOverlay && channel && (
+          <div className="channel-info-overlay">
+            {channel.logo && (
+              <img
+                src={channel.logo}
+                alt={channel.title}
+                className="channel-info-overlay-logo"
+              />
+            )}
+            <div className="channel-info-overlay-details">
+              <div className="channel-info-overlay-title">{channel.title}</div>
+              <div className="channel-info-overlay-meta">
+                {channel.group && (
+                  <span className="channel-info-overlay-group">
+                    {channel.group}
+                  </span>
+                )}
+                {channel.country && (
+                  <span className="channel-info-overlay-country">
+                    {channel.country}
+                  </span>
+                )}
+                {channel.language && (
+                  <span className="channel-info-overlay-language">
+                    {channel.language}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}

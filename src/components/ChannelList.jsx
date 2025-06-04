@@ -8,6 +8,8 @@ const ChannelList = ({
   selectedChannel,
   onChannelSelect,
   onClose,
+  fullscreenOverlay = false,
+  initialHighlightedChannelId,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -24,6 +26,7 @@ const ChannelList = ({
   const [epgError, setEpgError] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchInputRef = useRef(null);
+  const listRef = useRef(null); // Ref for react-window List
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -219,7 +222,448 @@ const ChannelList = ({
     }
   };
 
-  return (
+  // Add global keydown handler for fullscreen overlay navigation
+  useEffect(() => {
+    if (!fullscreenOverlay) return;
+    function handleGlobalKeyDown(e) {
+      // If search input is focused, let its own handler work
+      if (document.activeElement === searchInputRef.current) return;
+      if (filteredChannels.length === 0) return;
+      if (e.key === "ArrowDown") {
+        setHighlightedIndex((i) =>
+          Math.min(i + 1, filteredChannels.length - 1)
+        );
+        e.preventDefault();
+      } else if (e.key === "ArrowUp") {
+        setHighlightedIndex((i) => Math.max(i - 1, 0));
+        e.preventDefault();
+      } else if (e.key === "Enter") {
+        if (filteredChannels[highlightedIndex]) {
+          handleChannelClick(filteredChannels[highlightedIndex]);
+        }
+        e.preventDefault();
+      }
+    }
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [fullscreenOverlay, filteredChannels, highlightedIndex]);
+
+  // Scroll to highlighted item in fullscreen overlay when it changes
+  useEffect(() => {
+    if (fullscreenOverlay && listRef.current) {
+      listRef.current.scrollToItem(highlightedIndex, "smart");
+    }
+  }, [highlightedIndex, fullscreenOverlay]);
+
+  useEffect(() => {
+    if (fullscreenOverlay && initialHighlightedChannelId) {
+      const idx = filteredChannels.findIndex(
+        (ch) => ch.id === initialHighlightedChannelId
+      );
+      if (idx !== -1) setHighlightedIndex(idx);
+    }
+  }, [fullscreenOverlay, initialHighlightedChannelId, filteredChannels]);
+
+  return fullscreenOverlay ? (
+    <div className="fullscreen-channel-list-overlay">
+      <div className="fullscreen-channel-list-modal">
+        <button
+          className="fullscreen-channel-list-close"
+          onClick={onClose}
+          title="Close"
+          aria-label="Close channel list overlay"
+        >
+          ✕
+        </button>
+        <h2 className="fullscreen-channel-list-title">
+          📺 Channel List{" "}
+          <span className="count-badge">{filteredChannels.length}</span>
+        </h2>
+        <div className="fullscreen-channel-list-content">
+          <div className="channel-list-header fullscreen">
+            <div className="search-container fullscreen">
+              <input
+                type="text"
+                placeholder="Search channels..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input fullscreen"
+                aria-label="Search channels"
+                ref={searchInputRef}
+                onKeyDown={handleSearchKeyDown}
+              />
+              <div className="search-icon">🔍</div>
+            </div>
+            <div className="filter-controls fullscreen">
+              <button
+                className={`category-filter${showFavorites ? " active" : ""}`}
+                style={{ minWidth: 120 }}
+                onClick={() => setShowFavorites((v) => !v)}
+                title="Show Favorites"
+                aria-pressed={showFavorites}
+                aria-label="Show Favorites"
+                tabIndex={0}
+              >
+                {showFavorites ? "★ Favorites" : "☆ Favorites"}
+              </button>
+              <button
+                className={`category-filter${
+                  showRecentlyWatched ? " active" : ""
+                }`}
+                style={{ minWidth: 120 }}
+                onClick={() => setShowRecentlyWatched((v) => !v)}
+                title="Show Recently Watched"
+                aria-pressed={showRecentlyWatched}
+                aria-label="Show Recently Watched"
+                tabIndex={0}
+              >
+                {showRecentlyWatched
+                  ? "⏱ Recently Watched"
+                  : "⏱ Recently Watched"}
+              </button>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="category-filter"
+                aria-label="Filter by category"
+                tabIndex={0}
+              >
+                <option value="all">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category} ({channelGroups[category].length})
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="category-filter"
+                style={{ minWidth: 120 }}
+                title="Sort channels"
+                aria-label="Sort channels"
+                tabIndex={0}
+              >
+                <option value="default">Sort: Default</option>
+                <option value="title-az">Title (A-Z)</option>
+                <option value="title-za">Title (Z-A)</option>
+                <option value="group">Group</option>
+              </select>
+              <div className="view-toggle">
+                <button
+                  className={`view-button${
+                    viewMode === "list" ? " active" : ""
+                  }`}
+                  onClick={() => setViewMode("list")}
+                  title="List view"
+                  aria-label="List view"
+                  tabIndex={0}
+                >
+                  📃
+                </button>
+                <button
+                  className={`view-button${
+                    viewMode === "grid" ? " active" : ""
+                  }`}
+                  onClick={() => setViewMode("grid")}
+                  title="Grid view"
+                  aria-label="Grid view"
+                  tabIndex={0}
+                >
+                  🟦
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className={`channels-container ${viewMode}`}>
+            {showSkeleton ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="channel-item card skeleton">
+                  <div className="channel-logo-container">
+                    <div className="channel-logo-fallback skeleton-box" />
+                  </div>
+                  <div className="channel-info">
+                    <div
+                      className="channel-title skeleton-box"
+                      style={{ width: "60%" }}
+                    />
+                    <div className="channel-meta">
+                      <div
+                        className="channel-group badge skeleton-box"
+                        style={{ width: "40%" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="channel-actions">
+                    <div
+                      className="favorite-button skeleton-box"
+                      style={{ width: 24, height: 24, borderRadius: "50%" }}
+                    />
+                    <div
+                      className="play-button skeleton-box"
+                      style={{ width: 32, height: 32, borderRadius: "50%" }}
+                    />
+                    <div
+                      className="info-button skeleton-box"
+                      style={{ width: 24, height: 24, borderRadius: "50%" }}
+                    />
+                  </div>
+                </div>
+              ))
+            ) : viewMode === "list" ? (
+              <List
+                ref={listRef}
+                height={600}
+                itemCount={filteredChannels.length}
+                itemSize={80}
+                width={"100%"}
+                style={{ overflowX: "hidden" }}
+              >
+                {({ index, style }) => {
+                  const channel = filteredChannels[index];
+                  const isHighlighted = index === highlightedIndex;
+                  return (
+                    <div
+                      key={channel.id}
+                      style={style}
+                      className={`channel-item card ${
+                        selectedChannel?.id === channel.id ? "selected" : ""
+                      } ${isHighlighted ? "active" : ""}`}
+                      onClick={() => handleChannelClick(channel)}
+                      tabIndex={0}
+                      role="button"
+                      aria-pressed={selectedChannel?.id === channel.id}
+                      aria-label={`Select channel ${channel.title}`}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ")
+                          handleChannelClick(channel);
+                      }}
+                    >
+                      <div className="channel-logo-container">
+                        {channel.logo ? (
+                          <img
+                            src={channel.logo}
+                            alt={channel.title}
+                            className="channel-logo"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextSibling.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="channel-logo-fallback"
+                          style={{ display: channel.logo ? "none" : "flex" }}
+                        >
+                          {channel.country ? (
+                            <span className="flag">🌍</span>
+                          ) : (
+                            "📺"
+                          )}
+                        </div>
+                      </div>
+                      <div className="channel-info">
+                        <h3 className="channel-title">{channel.title}</h3>
+                        <div className="channel-meta">
+                          <span
+                            className="channel-group badge"
+                            title={channel.group}
+                          >
+                            📁 {channel.group}
+                          </span>
+                          {channel.country && (
+                            <span className="channel-country badge">
+                              🌍 {channel.country}
+                            </span>
+                          )}
+                          {channel.language && (
+                            <span className="channel-language badge">
+                              🗣️ {channel.language}
+                            </span>
+                          )}
+                          {channel.radio && (
+                            <span className="channel-type badge">📻 Radio</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="channel-actions">
+                        <button
+                          className={`favorite-button${
+                            favorites.includes(channel.id) ? " favorited" : ""
+                          }`}
+                          title={
+                            favorites.includes(channel.id)
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                          aria-label={
+                            favorites.includes(channel.id)
+                              ? `Remove ${channel.title} from favorites`
+                              : `Add ${channel.title} to favorites`
+                          }
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(channel.id);
+                          }}
+                        >
+                          {favorites.includes(channel.id) ? "★" : "☆"}
+                        </button>
+                        <button
+                          className="play-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChannelClick(channel);
+                          }}
+                          title="Play channel"
+                          aria-label={`Play channel ${channel.title}`}
+                          tabIndex={0}
+                        >
+                          ▶️
+                        </button>
+                        <button
+                          className="info-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModalChannel(channel);
+                          }}
+                          title="Channel info"
+                          aria-label={`Show info for channel ${channel.title}`}
+                          tabIndex={0}
+                        >
+                          ℹ️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }}
+              </List>
+            ) : filteredChannels.length === 0 ? (
+              <div className="no-channels">
+                <div className="no-channels-icon">📭</div>
+                <h3>No channels found</h3>
+                <p>Try adjusting your search or filter criteria</p>
+              </div>
+            ) : (
+              filteredChannels.map((channel, idx) => (
+                <div
+                  key={channel.id}
+                  className={`channel-item card ${
+                    selectedChannel?.id === channel.id ? "selected" : ""
+                  } ${idx === highlightedIndex ? "active" : ""}`}
+                  onClick={() => handleChannelClick(channel)}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={selectedChannel?.id === channel.id}
+                  aria-label={`Select channel ${channel.title}`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ")
+                      handleChannelClick(channel);
+                  }}
+                >
+                  <div className="channel-logo-container">
+                    {channel.logo ? (
+                      <img
+                        src={channel.logo}
+                        alt={channel.title}
+                        className="channel-logo"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="channel-logo-fallback"
+                      style={{ display: channel.logo ? "none" : "flex" }}
+                    >
+                      {channel.country ? (
+                        <span className="flag">🌍</span>
+                      ) : (
+                        "📺"
+                      )}
+                    </div>
+                  </div>
+                  <div className="channel-info">
+                    <h3 className="channel-title">{channel.title}</h3>
+                    <div className="channel-meta">
+                      <span
+                        className="channel-group badge"
+                        title={channel.group}
+                      >
+                        📁 {channel.group}
+                      </span>
+                      {channel.country && (
+                        <span className="channel-country badge">
+                          🌍 {channel.country}
+                        </span>
+                      )}
+                      {channel.language && (
+                        <span className="channel-language badge">
+                          🗣️ {channel.language}
+                        </span>
+                      )}
+                      {channel.radio && (
+                        <span className="channel-type badge">📻 Radio</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="channel-actions">
+                    <button
+                      className={`favorite-button${
+                        favorites.includes(channel.id) ? " favorited" : ""
+                      }`}
+                      title={
+                        favorites.includes(channel.id)
+                          ? "Remove from favorites"
+                          : "Add to favorites"
+                      }
+                      aria-label={
+                        favorites.includes(channel.id)
+                          ? `Remove ${channel.title} from favorites`
+                          : `Add ${channel.title} to favorites`
+                      }
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(channel.id);
+                      }}
+                    >
+                      {favorites.includes(channel.id) ? "★" : "☆"}
+                    </button>
+                    <button
+                      className="play-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleChannelClick(channel);
+                      }}
+                      title="Play channel"
+                      aria-label={`Play channel ${channel.title}`}
+                      tabIndex={0}
+                    >
+                      ▶️
+                    </button>
+                    <button
+                      className="info-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModalChannel(channel);
+                      }}
+                      title="Channel info"
+                      aria-label={`Show info for channel ${channel.title}`}
+                      tabIndex={0}
+                    >
+                      ℹ️
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
     <div className="channel-list rich">
       {/* Channel Info Modal */}
       {modalChannel && (
@@ -452,6 +896,7 @@ const ChannelList = ({
           ))
         ) : viewMode === "list" ? (
           <List
+            ref={listRef}
             height={600}
             itemCount={filteredChannels.length}
             itemSize={80}
@@ -505,7 +950,10 @@ const ChannelList = ({
                   <div className="channel-info">
                     <h3 className="channel-title">{channel.title}</h3>
                     <div className="channel-meta">
-                      <span className="channel-group badge">
+                      <span
+                        className="channel-group badge"
+                        title={channel.group}
+                      >
                         📁 {channel.group}
                       </span>
                       {channel.country && (
@@ -622,7 +1070,7 @@ const ChannelList = ({
               <div className="channel-info">
                 <h3 className="channel-title">{channel.title}</h3>
                 <div className="channel-meta">
-                  <span className="channel-group badge">
+                  <span className="channel-group badge" title={channel.group}>
                     📁 {channel.group}
                   </span>
                   {channel.country && (

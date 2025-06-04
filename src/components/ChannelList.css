@@ -554,3 +554,300 @@
   background: #3366cc;
   transform: scale(1.08);
 }
+
+.fullscreen-channel-list-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(24, 28, 36, 0.82);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  animation: fadeIn 0.2s;
+}
+
+.fullscreen-channel-list-modal {
+  background: rgba(36, 44, 66, 0.98);
+  border-radius: 22px;
+  box-shadow: 0 8px 40px rgba(51, 102, 204, 0.18),
+    0 2px 12px rgba(0, 0, 0, 0.18);
+  min-width: 480px;
+  max-width: 700px;
+  width: 100%;
+  min-height: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 2.2rem 1.5rem 1.5rem 1.5rem;
+  position: relative;
+  border: 1.5px solid #5c94ff;
+  animation: fadeInUp 0.33s cubic-bezier(0.23, 1.01, 0.32, 1);
+}
+
+.fullscreen-channel-list-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: rgba(51, 102, 204, 0.13);
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+  z-index: 10;
+}
+.fullscreen-channel-list-close:hover {
+  background: #3366cc;
+  color: #ffd93d;
+  transform: scale(1.08);
+}
+
+.fullscreen-channel-list-title {
+  text-align: center;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #ffd93d;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 12px rgba(51, 102, 204, 0.13);
+}
+
+.fullscreen-channel-list-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  overflow-x: hidden;
+}
+
+.channel-list-header.fullscreen {
+  background: none;
+  border-bottom: none;
+  padding: 0 0 1.2rem 0;
+}
+
+.search-container.fullscreen {
+  margin-bottom: 1.2rem;
+}
+
+.search-input.fullscreen {
+  font-size: 1.25rem;
+  padding: 1.1rem 2.5rem 1.1rem 1.2rem;
+  border-radius: 10px;
+  border: 2px solid #3366cc;
+  background: #23263a;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(51, 102, 204, 0.08);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input.fullscreen:focus {
+  border-color: #5c94ff;
+  box-shadow: 0 4px 18px rgba(92, 148, 255, 0.13);
+}
+
+.filter-controls.fullscreen {
+  gap: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.category-filter.fullscreen,
+.filter-controls.fullscreen .category-filter {
+  font-size: 1.1rem;
+  padding: 0.7em 2.5em 0.7em 1.2em;
+  border-radius: 10px;
+  background: #23263a;
+  color: #fff;
+  border: 2px solid #3366cc;
+  box-shadow: 0 2px 12px rgba(51, 102, 204, 0.08);
+}
+
+.view-toggle {
+  border: 2px solid #3366cc;
+  border-radius: 10px;
+  background: #23263a;
+  box-shadow: 0 2px 12px rgba(51, 102, 204, 0.08);
+}
+
+.view-button {
+  font-size: 1.2rem;
+  padding: 0.7rem 1.2rem;
+  background: none;
+  color: #fff;
+  border: none;
+  border-right: 2px solid #3366cc;
+  transition: background 0.2s, color 0.2s;
+}
+
+.view-button:last-child {
+  border-right: none;
+}
+
+.view-button.active {
+  background: #3366cc;
+  color: #ffd93d;
+}
+
+.channels-container.fullscreen {
+  background: none;
+  padding: 0.5rem 0 0 0;
+}
+
+.channel-item.card {
+  background: rgba(36, 44, 66, 0.92);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(51, 102, 204, 0.08);
+  border: 1.5px solid #23263a;
+  margin-bottom: 0.7rem;
+  transition: box-shadow 0.2s, background 0.2s, border 0.2s;
+}
+
+.channel-item.card.selected,
+.channel-item.card.active {
+  background: linear-gradient(90deg, #3366cc 0%, #5c94ff 100%);
+  color: #ffd93d;
+  border-left: 5px solid #ffd93d;
+  box-shadow: 0 4px 18px rgba(92, 148, 255, 0.13);
+}
+
+.channel-title {
+  font-size: 1.15rem;
+  color: #fff;
+  font-weight: 700;
+}
+
+.channel-meta {
+  font-size: 1rem;
+  color: #bfcfff;
+}
+
+.channel-group.badge,
+.channel-country.badge,
+.channel-language.badge,
+.channel-type.badge {
+  background: rgba(51, 102, 204, 0.28);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.1em 0.7em;
+  font-size: 0.95em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.favorite-button {
+  font-size: 1.5rem;
+  color: #ffd93d;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 0.5em;
+  transition: color 0.2s;
+}
+
+.favorite-button.favorited {
+  color: #ffd700;
+  text-shadow: 0 0 6px #ffd70044;
+}
+
+.favorite-button:hover {
+  color: #ffb300;
+}
+
+.play-button {
+  background: #3366cc;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: white;
+  margin-left: 0.2em;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.play-button:hover {
+  background: #2952a3;
+  transform: scale(1.08);
+}
+
+.info-button {
+  background: #5c94ff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: white;
+  margin-left: 0.2em;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.info-button:hover {
+  background: #3366cc;
+  transform: scale(1.08);
+}
+
+@media (max-width: 900px) {
+  .fullscreen-channel-list-modal {
+    min-width: 0;
+    width: 98vw;
+    padding: 1.2rem 0.2rem 0.7rem 0.2rem;
+  }
+  .fullscreen-channel-list-title {
+    font-size: 1.3rem;
+  }
+  .fullscreen-channel-list-close {
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .fullscreen-channel-list-modal {
+    min-width: 0;
+    width: 98vw;
+    max-width: 98vw;
+    padding: 1.2rem 0.2rem 0.7rem 0.2rem;
+  }
+  .fullscreen-channel-list-title {
+    font-size: 1.3rem;
+  }
+  .fullscreen-channel-list-close {
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+  }
+}

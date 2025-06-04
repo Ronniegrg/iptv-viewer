@@ -89,17 +89,21 @@ src/
 
 ## 🚀 Deployment
 
-This project is automatically deployed to GitHub Pages using GitHub Actions. Every push to the `main` branch triggers a new deployment.
+This project is automatically deployed to GitHub Pages using GitHub Actions. Every push to the `main` branch triggers a new deployment. The deployment workflow is defined in `.github/workflows/deploy.yml`.
+
+**Live Application:** [https://ronniegrg.github.io/iptv-viewer/](https://ronniegrg.github.io/iptv-viewer/)
 
 ### Manual Deployment
 
-You can also deploy manually using:
+If you want to deploy manually (for example, from your local machine), you can use the following command:
 
 ```bash
 npm run deploy
 ```
 
-The live application will be available at: https://ronniegrg.github.io/iptv-viewer/
+This will build the project and publish the contents of the `dist` directory to the `gh-pages` branch, making your site available at the URL above.
+
+> **Note:** Ensure your `vite.config.js` has the correct `base` set to `/iptv-viewer/` for GitHub Pages to work properly.
 
 ## 🤝 Contributing
 
