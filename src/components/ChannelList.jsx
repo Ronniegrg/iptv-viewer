@@ -10,6 +10,7 @@ const ChannelList = ({
   onClose,
   fullscreenOverlay = false,
   initialHighlightedChannelId,
+  externalSearchInputRef,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -289,7 +290,7 @@ const ChannelList = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input fullscreen"
                 aria-label="Search channels"
-                ref={searchInputRef}
+                ref={externalSearchInputRef || searchInputRef}
                 onKeyDown={handleSearchKeyDown}
               />
               <div className="search-icon">🔍</div>
@@ -783,7 +784,7 @@ const ChannelList = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
             aria-label="Search channels"
-            ref={searchInputRef}
+            ref={externalSearchInputRef || searchInputRef}
             onKeyDown={handleSearchKeyDown}
           />
           <div className="search-icon">🔍</div>

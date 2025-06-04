@@ -79,6 +79,7 @@ const VideoPlayer = ({
     React.useState(false);
   const channelInfoTimeoutRef = React.useRef();
   const searchItemRefs = React.useRef([]); // Refs for search result items
+  const channelListSearchInputRef = React.useRef(null);
 
   const handleError = useCallback(
     (error) => {
@@ -421,6 +422,12 @@ const VideoPlayer = ({
     }
   }, [highlightedIndex, showSearchBar, searchResults]);
 
+  React.useEffect(() => {
+    if (showChannelListOverlay && channelListSearchInputRef.current) {
+      channelListSearchInputRef.current.focus();
+    }
+  }, [showChannelListOverlay]);
+
   if (!channel) {
     return (
       <div className="video-player-container">
@@ -705,6 +712,7 @@ const VideoPlayer = ({
                 onClose={() => setShowChannelListOverlay(false)}
                 fullscreenOverlay={true}
                 initialHighlightedChannelId={channel?.id}
+                externalSearchInputRef={channelListSearchInputRef}
               />
             </div>
           </div>
