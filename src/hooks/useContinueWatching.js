@@ -14,11 +14,13 @@ export const useContinueWatching = () => {
   }, []);
 
   const addToContinueWatching = (channel) => {
+    // Store the full channel object for richer info in Continue Watching
     const newItem = {
       channelId: channel.id,
-      channelName: channel.name,
+      channelName: channel.name || channel.title,
       timestamp: Date.now(),
       lastPosition: 0, // This will be updated when the video is paused
+      channelData: channel, // Store the full channel object
     };
 
     setContinueWatching((prev) => {

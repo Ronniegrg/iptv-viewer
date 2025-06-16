@@ -79,7 +79,9 @@ const ContinueWatching = ({ onChannelSelect, channels }) => {
       <h2>Continue Watching</h2>
       <div className="continue-watching-list">
         {continueWatching.map((item) => {
-          const channelObj = getChannelObject(item.channelId, channels);
+          // Prefer the full channel object if available (from channelData), fallback to lookup
+          const channelObj =
+            item.channelData || getChannelObject(item.channelId, channels);
           const logo = getChannelLogo(item.channelId, channels);
           return (
             <div
