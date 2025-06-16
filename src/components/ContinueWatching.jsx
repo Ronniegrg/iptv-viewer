@@ -45,6 +45,19 @@ const ChannelHoverCard = ({ channel, lastWatched, logo }) => {
       {channel.description && (
         <div className="cw-hover-desc">{channel.description}</div>
       )}
+      <div className="cw-hover-meta" style={{ marginBottom: 6 }}>
+        {channel.country && (
+          <span className="channel-country badge" style={{ marginRight: 6 }}>
+            🌍 {channel.country}
+          </span>
+        )}
+        {channel.language && (
+          <span className="channel-language badge" style={{ marginRight: 6 }}>
+            🗣️ {channel.language}
+          </span>
+        )}
+        {channel.radio && <span className="channel-type badge">📻 Radio</span>}
+      </div>
       <div className="cw-hover-date">
         Last watched: {new Date(lastWatched).toLocaleString()}
       </div>

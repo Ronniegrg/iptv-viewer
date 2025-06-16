@@ -86,6 +86,9 @@ const VideoPlayer = ({
   const channelInfoTimeoutRef = React.useRef();
   const searchItemRefs = React.useRef([]); // Refs for search result items
   const channelListSearchInputRef = React.useRef(null);
+  const [fsKeyListenerActive, setFsKeyListenerActive] = React.useState(false);
+  const [showFsShortcutModal, setShowFsShortcutModal] = React.useState(false);
+  const fsKeyDivRef = React.useRef(null);
 
   const handleError = useCallback(
     (error) => {
@@ -515,6 +518,35 @@ const VideoPlayer = ({
     onVolumeDown: handleVolumeDown,
   });
 
+  useEffect(() => {
+    function onFullscreenChange() {
+      if (document.fullscreenElement) {
+        setFsKeyListenerActive(true);
+        setTimeout(() => {
+          fsKeyDivRef.current && fsKeyDivRef.current.focus();
+        }, 100);
+      } else {
+        setFsKeyListenerActive(false);
+        setShowFsShortcutModal(false);
+      }
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  const handleFsKeyDown = useCallback(
+    (e) => {
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        setShowFsShortcutModal(true);
+      }
+      if (e.key === "Escape" && showFsShortcutModal) {
+        setShowFsShortcutModal(false);
+      }
+    },
+    [showFsShortcutModal]
+  );
+
   if (!channel) {
     return (
       <div className="video-player-container">
@@ -922,6 +954,67 @@ const VideoPlayer = ({
         )}
         {showControls && !isLoading && !hasError && (
           <div className="custom-controls-overlay"></div>
+        )}
+        {fsKeyListenerActive && !showFsShortcutModal && (
+          <div
+            ref={fsKeyDivRef}
+            tabIndex={0}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "transparent",
+              zIndex: 9999,
+            }}
+            onKeyDown={handleFsKeyDown}
+          />
+        )}
+        {fsKeyListenerActive && showFsShortcutModal && (
+          <div
+            className="shortcut-modal-overlay"
+            onClick={() => setShowFsShortcutModal(false)}
+          >
+            <div
+              className="shortcut-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>Keyboard Shortcuts</h2>
+              <ul>
+                <li>
+                  <b>← / →</b>: Previous/Next Channel
+                </li>
+                <li>
+                  <b>Space</b>: Play/Pause
+                </li>
+                <li>
+                  <b>F</b>: Fullscreen
+                </li>
+                <li>
+                  <b>M</b>: Mute/Unmute
+                </li>
+                <li>
+                  <b>↑ / ↓</b>: Volume Up/Down
+                </li>
+                <li>
+                  <b>C</b>: Toggle Channel List
+                </li>
+                <li>
+                  <b>D</b>: Toggle Dark Mode
+                </li>
+                <li>
+                  <b>?</b>: Show this help
+                </li>
+                <li>
+                  <b>Esc</b>: Close modals/fullscreen
+                </li>
+              </ul>
+              <button
+                className="close-modal"
+                onClick={() => setShowFsShortcutModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

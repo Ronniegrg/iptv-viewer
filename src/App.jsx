@@ -31,6 +31,8 @@ function App() {
   const [customUrl, setCustomUrl] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [playlistHistory, setPlaylistHistory] = useState([]);
+  const [showShortcutModal, setShowShortcutModal] = useState(false);
+  const [showShortcutToast, setShowShortcutToast] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("iptv-dark-mode", darkMode);
@@ -81,6 +83,60 @@ function App() {
       JSON.stringify(playlistHistory)
     );
   }, [playlistHistory]);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (
+        (e.key === "?" || (e.shiftKey && e.key === "/")) &&
+        !showShortcutModal
+      ) {
+        setShowShortcutModal(true);
+      }
+      if (e.key === "Escape" && showShortcutModal) {
+        setShowShortcutModal(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    // Also listen on fullscreen element if present
+    function addFullscreenListener() {
+      const fsElem = document.fullscreenElement;
+      if (fsElem) {
+        fsElem.addEventListener("keydown", handleKeyDown);
+      }
+    }
+    function removeFullscreenListener() {
+      const fsElem = document.fullscreenElement;
+      if (fsElem) {
+        fsElem.removeEventListener("keydown", handleKeyDown);
+      }
+    }
+    document.addEventListener("fullscreenchange", addFullscreenListener);
+    document.addEventListener("fullscreenchange", removeFullscreenListener);
+    // Initial attach if already in fullscreen
+    addFullscreenListener();
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      removeFullscreenListener();
+      document.removeEventListener("fullscreenchange", addFullscreenListener);
+      document.removeEventListener(
+        "fullscreenchange",
+        removeFullscreenListener
+      );
+    };
+  }, [showShortcutModal]);
+
+  // Show toast when entering fullscreen
+  useEffect(() => {
+    function handleFullscreenChange() {
+      if (document.fullscreenElement) {
+        setShowShortcutToast(true);
+        setTimeout(() => setShowShortcutToast(false), 3500);
+      }
+    }
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   const loadPlaylist = async () => {
     try {
@@ -322,6 +378,13 @@ function App() {
           </div>
           <div className="header-right">
             <button
+              className="icon-button"
+              onClick={() => setShowShortcutModal(true)}
+              title="Keyboard Shortcuts (Shift + / or ?)"
+            >
+              ?
+            </button>
+            <button
               className="debug-toggle-button"
               onClick={() => setShowDebugInfo(!showDebugInfo)}
               title="Toggle debug information"
@@ -483,8 +546,9 @@ function App() {
               onRemoveChannel={handleRemoveChannel}
               onTimeout={handleStreamTimeout}
               channels={channels}
-              onChannelSelect={setSelectedChannel}
+              onChannelSelect={handleChannelSelect}
               onShowChannelList={showChannelList}
+              onShowShortcuts={() => setShowShortcutModal(true)}
             />
 
             {showDebugInfo && selectedChannel && (
@@ -524,6 +588,60 @@ function App() {
             )}
           </section>
         </main>
+
+        {showShortcutToast && (
+          <div className="shortcut-toast">
+            Press <b>Shift + /</b> or <b>?</b> for keyboard shortcuts
+          </div>
+        )}
+        {showShortcutModal && (
+          <div
+            className="shortcut-modal-overlay"
+            onClick={() => setShowShortcutModal(false)}
+          >
+            <div
+              className="shortcut-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>Keyboard Shortcuts</h2>
+              <ul>
+                <li>
+                  <b>← / →</b>: Previous/Next Channel
+                </li>
+                <li>
+                  <b>Space</b>: Play/Pause
+                </li>
+                <li>
+                  <b>F</b>: Fullscreen
+                </li>
+                <li>
+                  <b>M</b>: Mute/Unmute
+                </li>
+                <li>
+                  <b>↑ / ↓</b>: Volume Up/Down
+                </li>
+                <li>
+                  <b>C</b>: Toggle Channel List
+                </li>
+                <li>
+                  <b>D</b>: Toggle Dark Mode
+                </li>
+                <li>
+                  <b>?</b>: Show this help
+                </li>
+                <li>
+                  <b>Esc</b>: Close modals/fullscreen
+                </li>
+              </ul>
+              <button
+                className="close-modal"
+                onClick={() => setShowShortcutModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   );
