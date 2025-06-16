@@ -4,6 +4,10 @@ import { parseM3U } from "./utils/m3uParser";
 import VideoPlayer from "./components/VideoPlayer";
 import ChannelList from "./components/ChannelList";
 import LoadingSpinner from "./components/LoadingSpinner";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ContinueWatching from "./components/ContinueWatching";
+import { getErrorDetails, classifyError } from "./utils/errorHandler";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Search, Menu, X, Sun, Moon, Upload, Settings } from "lucide-react";
 import "./App.css";
 
@@ -115,9 +119,9 @@ function App() {
       }
     } catch (err) {
       console.error("Failed to load playlist:", err);
-      setError(
-        "Failed to load IPTV playlist. Please check your internet connection and try again."
-      );
+      const errorType = classifyError(err);
+      const errorInfo = getErrorDetails(errorType);
+      setError(errorInfo.message);
     } finally {
       setIsLoading(false);
     }
@@ -246,245 +250,282 @@ function App() {
   // Function to show the channel list (for use in VideoPlayer shortcut)
   const showChannelList = () => setIsChannelListVisible(true);
 
+  const handleNextChannel = () => {
+    if (!channels.length || !selectedChannel) return;
+    const currentIndex = channels.findIndex(
+      (ch) => ch.id === selectedChannel.id
+    );
+    const nextIndex = (currentIndex + 1) % channels.length;
+    setSelectedChannel(channels[nextIndex]);
+  };
+
+  const handlePreviousChannel = () => {
+    if (!channels.length || !selectedChannel) return;
+    const currentIndex = channels.findIndex(
+      (ch) => ch.id === selectedChannel.id
+    );
+    const prevIndex = (currentIndex - 1 + channels.length) % channels.length;
+    setSelectedChannel(channels[prevIndex]);
+  };
+
+  // Use the keyboard shortcuts hook
+  useKeyboardShortcuts({
+    onNextChannel: handleNextChannel,
+    onPreviousChannel: handlePreviousChannel,
+    onToggleChannelList: toggleChannelList,
+    onToggleDarkMode: () => setDarkMode(!darkMode),
+  });
+
   if (isLoading) {
     return (
-      <div className="app">
-        <LoadingSpinner message="Loading IPTV channels..." size="large" />
-      </div>
+      <ErrorBoundary>
+        <div className="app">
+          <LoadingSpinner message="Loading IPTV channels..." size="large" />
+        </div>
+      </ErrorBoundary>
     );
   }
 
   if (error) {
     return (
-      <div className="app">
-        <div className="error-container">
-          <div className="error-icon">📡</div>
-          <h1>Connection Error</h1>
-          <p>{error}</p>
-          <button className="retry-button" onClick={handleRetry}>
-            Try Again
-          </button>
+      <ErrorBoundary>
+        <div className="app">
+          <div className="error-container">
+            <div className="error-icon">📡</div>
+            <h1>Connection Error</h1>
+            <p>{error}</p>
+            <button className="retry-button" onClick={handleRetry}>
+              Try Again
+            </button>
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="header-left">
-          <h1>📺 IPTV Viewer</h1>
-          <span className="channel-count">
-            {channels.length} channels available
-          </span>
-        </div>
-        <div className="header-right">
-          <button
-            className="debug-toggle-button"
-            onClick={() => setShowDebugInfo(!showDebugInfo)}
-            title="Toggle debug information"
-          >
-            <Settings size={16} />
-            Debug
-          </button>
-          <button
-            className="toggle-channels-button"
-            onClick={toggleChannelList}
-            title={isChannelListVisible ? "Hide channels" : "Show channels"}
-          >
-            {isChannelListVisible ? <X size={16} /> : <Menu size={16} />}
-            {isChannelListVisible ? "Hide" : "Show"} Channels
-          </button>
-          <button
-            className="debug-toggle-button"
-            onClick={() => setDarkMode((v) => !v)}
-            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {darkMode ? <Moon size={16} /> : <Sun size={16} />}
-            {darkMode ? "Dark" : "Light"}
-          </button>
-          <button
-            className="debug-toggle-button"
-            onClick={() => setShowPlaylistModal(true)}
-            title="Upload or enter playlist URL"
-          >
-            <Upload size={16} />
-            Playlist
-          </button>
-        </div>
-      </header>
+    <ErrorBoundary>
+      <div className={`app ${darkMode ? "dark-mode" : ""}`}>
+        <header className="app-header">
+          <div className="header-left">
+            <button
+              className="icon-button"
+              onClick={toggleChannelList}
+              title="Toggle Channel List"
+            >
+              <Menu size={24} />
+            </button>
+            <h1>📺 IPTV Viewer</h1>
+            <span className="channel-count">
+              {channels.length} channels available
+            </span>
+          </div>
+          <div className="header-right">
+            <button
+              className="debug-toggle-button"
+              onClick={() => setShowDebugInfo(!showDebugInfo)}
+              title="Toggle debug information"
+            >
+              <Settings size={16} />
+              Debug
+            </button>
+            <button
+              className="toggle-channels-button"
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? <Sun size={24} /> : <Moon size={24} />}
+            </button>
+            <button
+              className="debug-toggle-button"
+              onClick={() => setShowPlaylistModal(true)}
+              title="Upload or enter playlist URL"
+            >
+              <Upload size={24} />
+              Playlist
+            </button>
+          </div>
+        </header>
 
-      <main
-        className={`app-main ${
-          isChannelListVisible ? "with-sidebar" : "full-width"
-        }`}
-      >
-        {/* Playlist Upload/URL Modal */}
-        {showPlaylistModal && (
-          <div
-            className="modal-overlay"
-            onClick={() => setShowPlaylistModal(false)}
-          >
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
-              <button
-                className="modal-close"
-                onClick={() => setShowPlaylistModal(false)}
-                title="Close"
-              >
-                ✕
-              </button>
-              <div className="modal-content">
-                <h2>Load Playlist</h2>
+        <main
+          className={`app-main ${
+            isChannelListVisible ? "with-sidebar" : "full-width"
+          }`}
+        >
+          {/* Playlist Upload/URL Modal */}
+          {showPlaylistModal && (
+            <div
+              className="modal-overlay"
+              onClick={() => setShowPlaylistModal(false)}
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
                 <button
-                  style={{
-                    width: "100%",
-                    padding: 8,
-                    marginBottom: 12,
-                    background: "#3366cc",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                  }}
-                  onClick={handleLoadDefaultPlaylist}
-                  title="Load the default system playlist"
+                  className="modal-close"
+                  onClick={() => setShowPlaylistModal(false)}
+                  title="Close"
                 >
-                  Load Default Playlist
+                  ✕
                 </button>
-                <form
-                  onSubmit={handleCustomUrlLoad}
-                  style={{ marginBottom: 16 }}
-                >
-                  <input
-                    type="url"
-                    placeholder="Enter playlist URL..."
-                    value={customUrl}
-                    onChange={(e) => setCustomUrl(e.target.value)}
-                    style={{ width: "100%", marginBottom: 8, padding: 8 }}
-                  />
-                  <button type="submit" style={{ width: "100%", padding: 8 }}>
-                    Load from URL
+                <div className="modal-content">
+                  <h2>Load Playlist</h2>
+                  <button
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      marginBottom: 12,
+                      background: "#3366cc",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                    }}
+                    onClick={handleLoadDefaultPlaylist}
+                    title="Load the default system playlist"
+                  >
+                    Load Default Playlist
                   </button>
-                </form>
-                {playlistHistory.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <h4>Saved URLs</h4>
-                    <ul style={{ paddingLeft: 0, listStyle: "none" }}>
-                      {playlistHistory.map((url) => (
-                        <li
-                          key={url}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            marginBottom: 4,
-                          }}
-                        >
-                          <span
+                  <form
+                    onSubmit={handleCustomUrlLoad}
+                    style={{ marginBottom: 16 }}
+                  >
+                    <input
+                      type="url"
+                      placeholder="Enter playlist URL..."
+                      value={customUrl}
+                      onChange={(e) => setCustomUrl(e.target.value)}
+                      style={{ width: "100%", marginBottom: 8, padding: 8 }}
+                    />
+                    <button type="submit" style={{ width: "100%", padding: 8 }}>
+                      Load from URL
+                    </button>
+                  </form>
+                  {playlistHistory.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <h4>Saved URLs</h4>
+                      <ul style={{ paddingLeft: 0, listStyle: "none" }}>
+                        {playlistHistory.map((url) => (
+                          <li
+                            key={url}
                             style={{
-                              flex: 1,
-                              wordBreak: "break-all",
-                              fontSize: "0.95em",
+                              display: "flex",
+                              alignItems: "center",
+                              marginBottom: 4,
                             }}
                           >
-                            {url}
-                          </span>
-                          <button
-                            style={{ marginLeft: 8 }}
-                            onClick={() => handleCustomUrlLoad(null, url)}
-                          >
-                            Load
-                          </button>
-                          <button
-                            style={{ marginLeft: 4 }}
-                            onClick={() =>
-                              setPlaylistHistory((prev) =>
-                                prev.filter((u) => u !== url)
-                              )
-                            }
-                          >
-                            Delete
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                            <span
+                              style={{
+                                flex: 1,
+                                wordBreak: "break-all",
+                                fontSize: "0.95em",
+                              }}
+                            >
+                              {url}
+                            </span>
+                            <button
+                              style={{ marginLeft: 8 }}
+                              onClick={() => handleCustomUrlLoad(null, url)}
+                            >
+                              Load
+                            </button>
+                            <button
+                              style={{ marginLeft: 4 }}
+                              onClick={() =>
+                                setPlaylistHistory((prev) =>
+                                  prev.filter((u) => u !== url)
+                                )
+                              }
+                            >
+                              Delete
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div style={{ margin: "16px 0", textAlign: "center" }}>
+                    or
                   </div>
-                )}
-                <div style={{ margin: "16px 0", textAlign: "center" }}>or</div>
-                <input
-                  type="file"
-                  accept=".m3u,.txt"
-                  onChange={handleFileUpload}
-                  style={{ marginBottom: 8 }}
-                />
-                {uploadError && (
-                  <div style={{ color: "red", marginTop: 8 }}>
-                    {uploadError}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isChannelListVisible && (
-          <aside className="sidebar">
-            <ChannelList
-              channels={channels}
-              selectedChannel={selectedChannel}
-              onChannelSelect={handleChannelSelect}
-              onClose={() => setIsChannelListVisible(false)}
-            />
-          </aside>
-        )}
-
-        <section className="content">
-          <VideoPlayer
-            channel={selectedChannel}
-            onError={handleVideoError}
-            onRemoveChannel={handleRemoveChannel}
-            onTimeout={handleStreamTimeout}
-            channels={channels}
-            onChannelSelect={setSelectedChannel}
-            onShowChannelList={showChannelList}
-          />
-
-          {showDebugInfo && selectedChannel && (
-            <div className="debug-panel">
-              <h3>🔧 Debug Information</h3>
-              <div className="debug-info">
-                <div className="debug-item">
-                  <strong>Channel:</strong> {selectedChannel.title}
+                  <input
+                    type="file"
+                    accept=".m3u,.txt"
+                    onChange={handleFileUpload}
+                    style={{ marginBottom: 8 }}
+                  />
+                  {uploadError && (
+                    <div style={{ color: "red", marginTop: 8 }}>
+                      {uploadError}
+                    </div>
+                  )}
                 </div>
-                <div className="debug-item">
-                  <strong>Group:</strong> {selectedChannel.group}
-                </div>
-                <div className="debug-item">
-                  <strong>URL:</strong>
-                  <span className="url-display">{selectedChannel.url}</span>
-                </div>
-                <div className="debug-item">
-                  <strong>Protocol:</strong>{" "}
-                  {new URL(selectedChannel.url).protocol}
-                </div>
-                <div className="debug-item">
-                  <strong>Host:</strong> {new URL(selectedChannel.url).hostname}
-                </div>
-                {selectedChannel.country && (
-                  <div className="debug-item">
-                    <strong>Country:</strong> {selectedChannel.country}
-                  </div>
-                )}
-                {selectedChannel.language && (
-                  <div className="debug-item">
-                    <strong>Language:</strong> {selectedChannel.language}
-                  </div>
-                )}
               </div>
             </div>
           )}
-        </section>
-      </main>
-    </div>
+
+          {isChannelListVisible && (
+            <aside className="sidebar">
+              <ChannelList
+                channels={channels}
+                selectedChannel={selectedChannel}
+                onChannelSelect={handleChannelSelect}
+                onClose={() => setIsChannelListVisible(false)}
+              />
+            </aside>
+          )}
+
+          <section className="content">
+            <ContinueWatching
+              onChannelSelect={handleChannelSelect}
+              channels={channels}
+            />
+            <VideoPlayer
+              channel={selectedChannel}
+              onError={handleVideoError}
+              onRemoveChannel={handleRemoveChannel}
+              onTimeout={handleStreamTimeout}
+              channels={channels}
+              onChannelSelect={setSelectedChannel}
+              onShowChannelList={showChannelList}
+            />
+
+            {showDebugInfo && selectedChannel && (
+              <div className="debug-panel">
+                <h3>🔧 Debug Information</h3>
+                <div className="debug-info">
+                  <div className="debug-item">
+                    <strong>Channel:</strong> {selectedChannel.title}
+                  </div>
+                  <div className="debug-item">
+                    <strong>Group:</strong> {selectedChannel.group}
+                  </div>
+                  <div className="debug-item">
+                    <strong>URL:</strong>
+                    <span className="url-display">{selectedChannel.url}</span>
+                  </div>
+                  <div className="debug-item">
+                    <strong>Protocol:</strong>{" "}
+                    {new URL(selectedChannel.url).protocol}
+                  </div>
+                  <div className="debug-item">
+                    <strong>Host:</strong>{" "}
+                    {new URL(selectedChannel.url).hostname}
+                  </div>
+                  {selectedChannel.country && (
+                    <div className="debug-item">
+                      <strong>Country:</strong> {selectedChannel.country}
+                    </div>
+                  )}
+                  {selectedChannel.language && (
+                    <div className="debug-item">
+                      <strong>Language:</strong> {selectedChannel.language}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        </main>
+      </div>
+    </ErrorBoundary>
   );
 }
 

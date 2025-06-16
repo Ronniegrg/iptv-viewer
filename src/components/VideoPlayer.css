@@ -1093,3 +1093,170 @@
     transform: translateX(-50%) translateY(30px);
   }
 }
+
+.video-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.video-error-content {
+  max-width: 500px;
+  width: 90%;
+  background: rgba(36, 44, 66, 0.95);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-error-content .error-icon {
+  margin-bottom: 1.5rem;
+  color: #ff6b6b;
+  animation: errorPulse 2s infinite ease-in-out;
+}
+
+.video-error-content h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.video-error-content p {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.video-error-content .error-suggestion {
+  color: #ffd93d;
+  font-size: 1rem;
+  margin: 1rem 0;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 217, 61, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.video-error-content .error-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.video-error-content .retry-button,
+.video-error-content .next-channel-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.video-error-content .retry-button {
+  background: #3366cc;
+  color: white;
+}
+
+.video-error-content .retry-button:hover {
+  background: #2952a3;
+  transform: translateY(-1px);
+}
+
+.video-error-content .next-channel-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.video-error-content .next-channel-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.video-error-content .error-details {
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.video-error-content .error-details summary {
+  cursor: pointer;
+  color: #5c94ff;
+  font-weight: 500;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.video-error-content .error-details summary:hover {
+  background: rgba(92, 148, 255, 0.1);
+}
+
+.video-error-content .error-stack {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: #ff6b6b;
+}
+
+@keyframes errorPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@media (max-width: 600px) {
+  .video-error-content {
+    padding: 1.5rem;
+  }
+
+  .video-error-content h3 {
+    font-size: 1.25rem;
+  }
+
+  .video-error-content p {
+    font-size: 1rem;
+  }
+
+  .video-error-content .error-actions {
+    flex-direction: column;
+  }
+
+  .video-error-content .retry-button,
+  .video-error-content .next-channel-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .video-error-content .error-stack {
+    font-size: 0.75rem;
+  }
+}

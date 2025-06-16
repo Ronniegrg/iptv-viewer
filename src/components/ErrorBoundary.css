@@ -1,0 +1,147 @@
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: var(--color-bg-primary, #12151c);
+  color: #fff;
+}
+
+.error-boundary-content {
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  background: rgba(36, 44, 66, 0.95);
+  padding: 2.5rem;
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.error-boundary .error-icon {
+  margin-bottom: 1.5rem;
+  animation: errorPulse 2s infinite ease-in-out;
+}
+
+.error-boundary h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.75rem;
+  color: #ff6b6b;
+  font-weight: 700;
+}
+
+.error-boundary p {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.error-boundary .error-suggestion {
+  color: #ffd93d;
+  font-size: 1rem;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 217, 61, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.error-boundary .error-details {
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.error-boundary .error-details summary {
+  cursor: pointer;
+  color: #5c94ff;
+  font-weight: 500;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.error-boundary .error-details summary:hover {
+  background: rgba(92, 148, 255, 0.1);
+}
+
+.error-boundary .error-stack {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: #ff6b6b;
+}
+
+.error-boundary .error-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.error-boundary .retry-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #3366cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.error-boundary .retry-button:hover {
+  background: #2952a3;
+  transform: translateY(-1px);
+}
+
+.error-boundary .retry-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes errorPulse {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@media (max-width: 600px) {
+  .error-boundary {
+    padding: 1rem;
+  }
+
+  .error-boundary-content {
+    padding: 1.5rem;
+  }
+
+  .error-boundary h2 {
+    font-size: 1.5rem;
+  }
+
+  .error-boundary p {
+    font-size: 1rem;
+  }
+
+  .error-boundary .error-stack {
+    font-size: 0.75rem;
+  }
+}

@@ -3,6 +3,9 @@ import ReactPlayer from "react-player";
 import React from "react";
 import "./VideoPlayer.css";
 import ChannelList from "./ChannelList";
+import { getErrorDetails, classifyError } from "../utils/errorHandler";
+import { useContinueWatching } from "../hooks/useContinueWatching";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 
 const initialState = {
   isLoading: true,
@@ -60,10 +63,13 @@ const VideoPlayer = ({
   onShowChannelList,
 }) => {
   const [state, dispatch] = useReducer(playerReducer, initialState);
+  const { addToContinueWatching, updateLastPosition } = useContinueWatching();
   const [showControls, setShowControls] = React.useState(false);
   const videoRef = useRef(null);
   const videoWrapperRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [isMuted, setIsMuted] = React.useState(false);
+  const [volume, setVolume] = React.useState(1);
   const copyTimeoutRef = useRef();
   const timeoutRef = useRef();
   const errorTimeoutRef = useRef();
@@ -90,14 +96,20 @@ const VideoPlayer = ({
         code: error?.code,
         type: error?.type,
       });
+
+      const errorType = classifyError(error);
+      const errorInfo = getErrorDetails(errorType);
+
       dispatch({
         type: "SET_ERROR",
         payload: {
-          message: error?.message || "Stream playback failed",
+          ...errorInfo,
           url: channel?.url,
           timestamp: new Date().toISOString(),
+          originalError: error,
         },
       });
+
       if (onError) {
         onError(error);
       }
@@ -116,8 +128,9 @@ const VideoPlayer = ({
       });
       if (!validation.valid) {
         handleError({
-          message: `Invalid channel: ${validation.reason}`,
+          message: validation.reason,
           code: "VALIDATION_ERROR",
+          type: "VALIDATION_ERROR",
         });
         return;
       }
@@ -428,6 +441,80 @@ const VideoPlayer = ({
     }
   }, [showChannelListOverlay]);
 
+  // Add this new effect to handle continue watching
+  useEffect(() => {
+    if (channel && !state.hasError) {
+      addToContinueWatching(channel);
+    }
+  }, [channel, state.hasError, addToContinueWatching]);
+
+  // Add this new handler for video progress
+  const handleProgress = useCallback(
+    ({ playedSeconds }) => {
+      if (channel) {
+        updateLastPosition(channel.id, playedSeconds);
+      }
+    },
+    [channel, updateLastPosition]
+  );
+
+  const handleToggleFullscreen = useCallback(() => {
+    if (!isFullscreen) {
+      if (videoWrapperRef.current) {
+        if (videoWrapperRef.current.requestFullscreen) {
+          videoWrapperRef.current.requestFullscreen();
+        } else if (videoWrapperRef.current.webkitRequestFullscreen) {
+          videoWrapperRef.current.webkitRequestFullscreen();
+        } else if (videoWrapperRef.current.mozRequestFullScreen) {
+          videoWrapperRef.current.mozRequestFullScreen();
+        } else if (videoWrapperRef.current.msRequestFullscreen) {
+          videoWrapperRef.current.msRequestFullscreen();
+        }
+      }
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (document.webkitFullscreenElement) {
+        document.webkitExitFullscreen();
+      } else if (document.mozFullScreenElement) {
+        document.mozCancelFullScreen();
+      } else if (document.msFullscreenElement) {
+        document.msExitFullscreen();
+      }
+    }
+  }, [isFullscreen]);
+
+  const handleTogglePlayPause = useCallback(() => {
+    if (videoRef.current) {
+      if (state.isPlaying) {
+        videoRef.current.getInternalPlayer()?.pause();
+      } else {
+        videoRef.current.getInternalPlayer()?.play();
+      }
+    }
+  }, [state.isPlaying]);
+
+  const handleToggleMute = useCallback(() => {
+    setIsMuted(!isMuted);
+  }, [isMuted]);
+
+  const handleVolumeUp = useCallback(() => {
+    setVolume((prev) => Math.min(1, prev + 0.1));
+  }, []);
+
+  const handleVolumeDown = useCallback(() => {
+    setVolume((prev) => Math.max(0, prev - 0.1));
+  }, []);
+
+  // Use the keyboard shortcuts hook
+  useKeyboardShortcuts({
+    onToggleFullscreen: handleToggleFullscreen,
+    onTogglePlayPause: handleTogglePlayPause,
+    onToggleMute: handleToggleMute,
+    onVolumeUp: handleVolumeUp,
+    onVolumeDown: handleVolumeDown,
+  });
+
   if (!channel) {
     return (
       <div className="video-player-container">
@@ -577,31 +664,7 @@ const VideoPlayer = ({
           <button
             className="fullscreen-toggle-button"
             title={isFullscreen ? "Exit Fullscreen (ESC)" : "Fullscreen (F)"}
-            onClick={() => {
-              if (!isFullscreen) {
-                if (videoWrapperRef.current) {
-                  if (videoWrapperRef.current.requestFullscreen) {
-                    videoWrapperRef.current.requestFullscreen();
-                  } else if (videoWrapperRef.current.webkitRequestFullscreen) {
-                    videoWrapperRef.current.webkitRequestFullscreen();
-                  } else if (videoWrapperRef.current.mozRequestFullScreen) {
-                    videoWrapperRef.current.mozRequestFullScreen();
-                  } else if (videoWrapperRef.current.msRequestFullscreen) {
-                    videoWrapperRef.current.msRequestFullscreen();
-                  }
-                }
-              } else {
-                if (document.fullscreenElement) {
-                  document.exitFullscreen();
-                } else if (document.webkitFullscreenElement) {
-                  document.webkitExitFullscreen();
-                } else if (document.mozFullScreenElement) {
-                  document.mozCancelFullScreen();
-                } else if (document.msFullscreenElement) {
-                  document.msExitFullscreen();
-                }
-              }
-            }}
+            onClick={handleToggleFullscreen}
           >
             {isFullscreen ? (
               <svg
@@ -627,11 +690,108 @@ const VideoPlayer = ({
       </div>
 
       <div
-        className="video-wrapper"
+        className={`video-wrapper ${isFullscreen ? "fullscreen" : ""}`}
         ref={videoWrapperRef}
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
       >
+        {hasError && (
+          <div className="video-error-overlay">
+            <div className="video-error-content">
+              <div className="error-icon">
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                </svg>
+              </div>
+              <h3>{errorDetails?.title || "Playback Error"}</h3>
+              <p>{errorDetails?.message}</p>
+              {errorDetails?.suggestion && (
+                <p className="error-suggestion">{errorDetails.suggestion}</p>
+              )}
+              <div className="error-actions">
+                <button
+                  className="retry-button"
+                  onClick={() => {
+                    dispatch({ type: "RETRY" });
+                  }}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                  </svg>
+                  Retry ({retryCount + 1})
+                </button>
+                <button
+                  className="next-channel-button"
+                  onClick={() => {
+                    if (onTimeout) onTimeout();
+                  }}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                  </svg>
+                  Next Channel
+                </button>
+              </div>
+              {errorDetails?.originalError && (
+                <details className="error-details">
+                  <summary>Technical Details</summary>
+                  <pre className="error-stack">
+                    {JSON.stringify(
+                      {
+                        message: errorDetails.originalError.message,
+                        code: errorDetails.originalError.code,
+                        type: errorDetails.originalError.type,
+                        url: errorDetails.url,
+                        timestamp: errorDetails.timestamp,
+                      },
+                      null,
+                      2
+                    )}
+                  </pre>
+                </details>
+              )}
+            </div>
+          </div>
+        )}
+        {!hasError && (
+          <ReactPlayer
+            ref={videoRef}
+            url={getProxiedUrl(channel?.url)}
+            playing={state.isPlaying}
+            onReady={handleReady}
+            onBuffer={handleBuffer}
+            onBufferEnd={handleBufferEnd}
+            onError={handleError}
+            onProgress={handleProgress}
+            width="100%"
+            height="100%"
+            controls={false}
+            muted={isMuted}
+            volume={volume}
+            config={{
+              file: {
+                attributes: {
+                  crossOrigin: "anonymous",
+                },
+              },
+            }}
+          />
+        )}
         {showSearchBar && (
           <div className="fullscreen-search-overlay">
             <form
@@ -747,115 +907,6 @@ const VideoPlayer = ({
               </div>
             </div>
           </div>
-        )}
-        {hasError ? (
-          <div className="error-state">
-            <div className="error-icon">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="#ff6b6b">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-              </svg>
-            </div>
-            <h3>Unable to play this channel</h3>
-            <p>
-              The stream might be unavailable or incompatible with your browser
-            </p>
-            {errorDetails && (
-              <details className="error-details">
-                <summary>Error Details</summary>
-                <div className="error-info">
-                  <p>
-                    <strong>URL:</strong> {errorDetails.url}
-                  </p>
-                  <p>
-                    <strong>Error:</strong> {errorDetails.message}
-                  </p>
-                  <p>
-                    <strong>Time:</strong>{" "}
-                    {new Date(errorDetails.timestamp).toLocaleString()}
-                  </p>
-                </div>
-              </details>
-            )}
-            <div className="error-actions">
-              <button
-                className="retry-button"
-                onClick={() => {
-                  dispatch({ type: "RETRY" });
-                }}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-                </svg>
-                Try Again ({retryCount + 1})
-              </button>
-              <button
-                className="copy-url-button"
-                onClick={() => {
-                  navigator.clipboard.writeText(channel?.url || "");
-                  const button = document.querySelector(".copy-url-button");
-                  const originalText = button.innerHTML;
-                  button.innerHTML =
-                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> Copied!';
-                  if (copyTimeoutRef.current) {
-                    clearTimeout(copyTimeoutRef.current);
-                  }
-                  copyTimeoutRef.current = setTimeout(() => {
-                    button.innerHTML = originalText;
-                  }, 2000);
-                }}
-                title="Copy stream URL to clipboard"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-                </svg>
-                Copy URL
-              </button>
-            </div>
-          </div>
-        ) : (
-          <ReactPlayer
-            ref={videoRef}
-            url={getProxiedUrl(channel.url)}
-            playing={true}
-            controls={true}
-            width="100%"
-            height="100%"
-            onReady={handleReady}
-            onError={handleError}
-            onBuffer={handleBuffer}
-            onBufferEnd={handleBufferEnd}
-            config={{
-              file: {
-                attributes: {
-                  crossOrigin: "anonymous",
-                  preload: "metadata",
-                  controlsList: "nodownload",
-                },
-                forceHLS: true,
-                forceVideo: true,
-              },
-              hls: {
-                isLive: true,
-                enableWorker: false,
-              },
-            }}
-            fallback={
-              <div className="player-fallback">
-                <div className="loading-spinner"></div>
-                <p>Loading player...</p>
-              </div>
-            }
-          />
         )}
         {isLoading && !hasError && (
           <div className="loading-overlay">
